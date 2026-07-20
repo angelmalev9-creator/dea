@@ -1,14 +1,26 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Emerald Gate — Sniper & Copytrading</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="styles.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Prevent the browser/Vercel from keeping the old frontend files -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <title>Emerald Gate — Sniper & Copytrading</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="styles.css?v=paper-20260720-2" />
 </head>
+
 <body>
 
 <!-- ── Auth ─────────────────────────────────────────────── -->
@@ -16,120 +28,306 @@
   <div class="card auth-card">
     <div class="brand" style="margin-bottom:16px">
       <span class="brand-mark"></span>
-      <div><h1>Emerald Gate</h1><p class="brand-sub">Sniper signals & copytrading · live on-chain</p></div>
+
+      <div>
+        <h1>Emerald Gate</h1>
+        <p class="brand-sub">Real market data · paper and live execution</p>
+      </div>
     </div>
-    <input id="auth-email" type="email" placeholder="email" autocomplete="email" />
-    <input id="auth-pass" type="password" placeholder="password" autocomplete="current-password" />
+
+    <input
+      id="auth-email"
+      type="email"
+      placeholder="email"
+      autocomplete="email"
+    />
+
+    <input
+      id="auth-pass"
+      type="password"
+      placeholder="password"
+      autocomplete="current-password"
+    />
+
     <div style="display:flex;gap:10px;margin-top:10px">
       <button class="btn primary" id="btn-login">Sign in</button>
       <button class="btn" id="btn-signup">Create free FOMO account</button>
     </div>
+
     <p class="auth-msg" id="auth-msg"></p>
-    <p class="stat-foot">Free accounts see every signal and every KOL trade in real time. Live trading with real funds requires a PRO plan.</p>
+
+    <p class="stat-foot">
+      Paper trading uses real market data without sending blockchain
+      transactions. Live trading with real funds requires a PRO plan.
+    </p>
   </div>
 </div>
 
 <!-- ── App ──────────────────────────────────────────────── -->
 <div id="app" class="hidden">
-<header class="topbar">
-  <div class="brand">
-    <span class="brand-mark"></span>
-    <div><h1>Emerald Gate</h1><p class="brand-sub">Sniper & copytrading · live on-chain only</p></div>
-  </div>
-  <div class="topbar-status">
-    <span id="plan-chip" class="plan-chip fomo">FOMO</span>
-    <span id="mode-badge" class="badge">—</span>
-    <div id="rpc-dots" class="rpc-dots"></div>
-    <button class="btn small" id="btn-logout">Sign out</button>
-  </div>
-</header>
 
-<main>
-  <section class="row row-wallet">
-    <article class="card">
-      <div class="card-head"><h2>Your sniper wallet</h2><span id="wallet-sync" class="sync-tag">syncing…</span></div>
-      <p class="mono addr" id="wallet-address">—</p>
-      <div class="balance-line"><span class="balance-value num" id="wallet-balance">—</span><span class="balance-unit">SOL</span></div>
-      <div id="awaiting-funds" class="awaiting hidden">
-        <div class="awaiting-pulse"></div>
-        <div><strong>Awaiting funds</strong>
-        <p>This wallet was generated for your account. Deposit SOL to the address above to activate — the balance is read live from chain.</p></div>
-      </div>
-      <ul id="token-holdings" class="token-holdings"></ul>
-    </article>
-    <article class="card">
-      <div class="card-head"><h2>Realized performance</h2></div>
-      <div class="stat-grid">
-        <div class="stat"><span class="stat-label">Realized PnL</span><span class="stat-value num" id="stat-pnl">—</span></div>
-        <div class="stat"><span class="stat-label">Win rate</span><span class="stat-value num" id="stat-winrate">—</span></div>
-        <div class="stat"><span class="stat-label">Open positions</span><span class="stat-value num" id="stat-open">—</span></div>
-        <div class="stat"><span class="stat-label">Closed trades</span><span class="stat-value num" id="stat-closed">—</span></div>
-      </div>
-      <p class="stat-foot">Only settled on-chain trades. No paper balance, ever.</p>
-    </article>
-  </section>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark"></span>
 
-  <section class="card">
-    <div class="card-head"><h2>Sniper signals — intelligent gate</h2><span class="sync-tag" id="scan-ts">—</span></div>
-    <div class="toolbar">
-      <input id="scam-input" placeholder="paste any token mint → scam or real?" />
-      <button class="btn small" id="btn-scam">Check token</button>
-      <span id="scam-result" class="sub"></span>
+      <div>
+        <h1>Emerald Gate</h1>
+        <p class="brand-sub">Real market data · paper and live execution</p>
+      </div>
     </div>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Token</th><th class="num-col">Price</th><th class="num-col">Liquidity</th><th>Gate</th><th>Status</th></tr></thead>
-      <tbody id="signal-rows"><tr class="empty-row"><td colspan="5">Scanner runs every 30s over fresh DEXScreener launches…</td></tr></tbody>
-    </table></div>
-  </section>
 
-  <section class="row">
-    <article class="card">
-      <div class="card-head"><h2>Copytrade feed</h2></div>
-      <ul id="copy-list" class="feed"><li class="empty-row">KOL trades appear here in real time.</li></ul>
-    </article>
-    <article class="card">
-      <div class="card-head"><h2>KOL leaderboard <span class="sub">live from kolscan.io</span></h2></div>
+    <div class="topbar-status">
+      <span id="plan-chip" class="plan-chip fomo">FOMO</span>
+      <span id="mode-badge" class="badge">—</span>
+      <div id="rpc-dots" class="rpc-dots"></div>
+      <button class="btn small" id="btn-logout">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Wallet + performance -->
+    <section class="row row-wallet">
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Trading wallet</h2>
+          <span id="wallet-sync" class="sync-tag">syncing…</span>
+        </div>
+
+        <p class="mono addr" id="wallet-address">—</p>
+
+        <div class="balance-line">
+          <span class="balance-value num" id="wallet-balance">—</span>
+          <span class="balance-unit">SOL</span>
+        </div>
+
+        <div id="awaiting-funds" class="awaiting hidden">
+          <div class="awaiting-pulse"></div>
+
+          <div>
+            <strong>Awaiting funds</strong>
+            <p>
+              Deposit SOL only when LIVE mode is intentionally enabled.
+              PAPER mode never uses real funds.
+            </p>
+          </div>
+        </div>
+
+        <ul id="token-holdings" class="token-holdings"></ul>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Realized performance</h2>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat">
+            <span class="stat-label">Realized PnL</span>
+            <span class="stat-value num" id="stat-pnl">—</span>
+          </div>
+
+          <div class="stat">
+            <span class="stat-label">Win rate</span>
+            <span class="stat-value num" id="stat-winrate">—</span>
+          </div>
+
+          <div class="stat">
+            <span class="stat-label">Open positions</span>
+            <span class="stat-value num" id="stat-open">—</span>
+          </div>
+
+          <div class="stat">
+            <span class="stat-label">Closed trades</span>
+            <span class="stat-value num" id="stat-closed">—</span>
+          </div>
+        </div>
+
+        <p class="stat-foot">Loading the selected execution mode…</p>
+      </article>
+
+    </section>
+
+    <!-- Sniper -->
+    <section class="card">
+      <div class="card-head">
+        <h2>Sniper signals — intelligent gate</h2>
+        <span class="sync-tag" id="scan-ts">—</span>
+      </div>
+
       <div class="toolbar">
-        <input id="trader-input" placeholder="or paste any wallet address to follow" />
-        <button class="btn small" id="btn-follow">Follow</button>
+        <input
+          id="scam-input"
+          placeholder="paste any token mint → scam or real?"
+        />
+
+        <button class="btn small" id="btn-scam">
+          Check token
+        </button>
+
+        <span id="scam-result" class="sub"></span>
       </div>
-      <div id="kol-list"></div>
-    </article>
-  </section>
 
-  <section class="row">
-    <article class="card">
-      <div class="card-head"><h2>Open positions</h2></div>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Token</th><th>Source</th><th class="num-col">PnL</th><th>Exit engine</th></tr></thead>
-        <tbody id="open-rows"><tr class="empty-row"><td colspan="4">No open positions.</td></tr></tbody>
-      </table></div>
-    </article>
-    <article class="card">
-      <div class="card-head"><h2>Closed trades</h2></div>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Token</th><th class="num-col">PnL</th><th>Exit reason</th><th>Tx</th></tr></thead>
-        <tbody id="closed-rows"><tr class="empty-row"><td colspan="4">No closed trades yet.</td></tr></tbody>
-      </table></div>
-    </article>
-  </section>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Token</th>
+              <th class="num-col">Price</th>
+              <th class="num-col">Liquidity</th>
+              <th>Gate</th>
+              <th>Status</th>
+            </tr>
+          </thead>
 
-  <section class="card">
-    <div class="card-head"><h2>Strategy settings</h2><span class="sync-tag">defaults are the recommended profile — change anything, it becomes yours</span></div>
-    <div class="settings-grid" id="settings-grid"></div>
-    <div style="display:flex;gap:10px;margin-top:14px">
-      <button class="btn primary" id="btn-save-settings">Save custom settings</button>
-      <button class="btn" id="btn-reset-settings">Reset to best defaults</button>
-      <span id="settings-msg" class="sub"></span>
-    </div>
-  </section>
-</main>
+          <tbody id="signal-rows">
+            <tr class="empty-row">
+              <td colspan="5">
+                Scanner runs every 30s over fresh DEXScreener launches…
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-<footer><p>Prices, balances and signatures are live from Solana RPC, DEXScreener, Rugcheck and kolscan.io. Meme coin trading and copytrading KOLs carry a high risk of total loss — leaderboard traders are aware they are being copied.</p></footer>
+    <!-- Copytrade + KOLs -->
+    <section class="row">
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Copytrade feed</h2>
+        </div>
+
+        <ul id="copy-list" class="feed">
+          <li class="empty-row">
+            KOL trades appear here in real time.
+          </li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <h2>
+            KOL leaderboard
+            <span class="sub">live from kolscan.io</span>
+          </h2>
+        </div>
+
+        <div class="toolbar">
+          <input
+            id="trader-input"
+            placeholder="or paste any wallet address to follow"
+          />
+
+          <button class="btn small" id="btn-follow">
+            Follow
+          </button>
+        </div>
+
+        <div id="kol-list"></div>
+      </article>
+
+    </section>
+
+    <!-- Positions -->
+    <section class="row">
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Open positions</h2>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Token</th>
+                <th>Source</th>
+                <th class="num-col">PnL</th>
+                <th>Exit engine</th>
+              </tr>
+            </thead>
+
+            <tbody id="open-rows">
+              <tr class="empty-row">
+                <td colspan="4">No open positions.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-head">
+          <h2>Closed trades</h2>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Token</th>
+                <th class="num-col">PnL</th>
+                <th>Exit reason</th>
+                <th>Tx</th>
+              </tr>
+            </thead>
+
+            <tbody id="closed-rows">
+              <tr class="empty-row">
+                <td colspan="4">No closed trades yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+    </section>
+
+    <!-- Settings -->
+    <section class="card">
+      <div class="card-head">
+        <h2>Strategy settings</h2>
+
+        <span class="sync-tag">
+          defaults are the recommended profile — change anything,
+          it becomes yours
+        </span>
+      </div>
+
+      <div class="settings-grid" id="settings-grid"></div>
+
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn primary" id="btn-save-settings">
+          Save custom settings
+        </button>
+
+        <button class="btn" id="btn-reset-settings">
+          Reset to best defaults
+        </button>
+
+        <span id="settings-msg" class="sub"></span>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>
+      Prices, liquidity and source signatures come from live external
+      providers. PAPER mode never signs or broadcasts a Solana transaction.
+    </p>
+  </footer>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="app.js"></script>
+
+<!-- Versioned files force browsers and Vercel to load the new PAPER frontend -->
+<script src="config.js?v=paper-20260720-2"></script>
+<script src="app.js?v=paper-20260720-2"></script>
+
 </body>
 </html>
