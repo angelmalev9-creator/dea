@@ -7,7 +7,7 @@ const short = (s, n = 4) => (s ? `${s.slice(0, n)}…${s.slice(-n)}` : "—");
 const fmt = (n, d = 2) => (n === null || n === undefined || Number.isNaN(Number(n)) ? "—" : Number(n).toLocaleString("en-US", { maximumFractionDigits: d }));
 const fmtPrice = p => (p >= 1 ? fmt(p, 4) : p ? Number(p).toPrecision(3) : "—");
 const time = ts => new Date(ts).toLocaleTimeString("en-GB");
-const solscan = sig => `https://solscan.io/tx/${sig}`;
+const solscan = sig => `https://solscan.io/tx/${encodeURIComponent(sig)}`;
 
 let session = null, pollTimer = null, state = null, kolCache = [];
 
@@ -87,26 +87,65 @@ function gate(checks, security) {
   return `<div class="gate">${keys.map(k => `<span class="pip ${all[k].pass ? "pass" : "fail"}" title="${esc(k)}: ${esc(all[k].detail || "")}"></span>`).join("")}</div>`;
 }
 
+function firstFailure(candidate) {
+  if (candidate.reason) return candidate.reason;
+  const all = { ...(candidate.checks || {}), ...(candidate.security || {}) };
+  const failed = Object.entries(all).find(([, check]) => !check?.pass);
+  return failed ? `${failed[0]}: ${failed[1]?.detail || "failed"}` : "";
+}
+
+function dedupeByMint(rows) {
+  const seen = new Set();
+  return (rows || []).filter(row => {
+    const key = row?.mint || `${row?.symbol}:${row?.price_usd ?? row?.priceUsd}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function renderSignals(s) {
   $("scan-ts").textContent = s.scan?.ts ? `last scan ${time(s.scan.ts)}` : "—";
-  const rows = (s.scan?.candidates?.length ? s.scan.candidates : s.signals) || [];
-  $("signal-rows").innerHTML = rows.length ? rows.slice(0, 20).map(c => `<tr>
+  const raw = s.scan?.candidates?.length ? s.scan.candidates : s.signals;
+  const rows = dedupeByMint(raw).slice(0, 20);
+
+  $("signal-rows").innerHTML = rows.length ? rows.map(c => {
+    const stage = c.stage || ((c.trade_ready ?? c.tradeReady) ? "TRADE_READY" : "FILTERED");
+    const ready = stage === "TRADE_READY";
+    const reason = firstFailure(c);
+
+    return `<tr>
       <td class="sym">${esc(c.symbol || "?")}<span class="sub">${esc(short(c.mint))}</span></td>
       <td class="num-col">$${fmtPrice(c.price_usd ?? c.priceUsd)}</td>
       <td class="num-col">$${fmt(c.liquidity_usd ?? c.liquidityUsd, 0)}</td>
       <td>${gate(c.checks, c.security)}</td>
-      <td><span class="status-chip ${(c.trade_ready ?? c.tradeReady) ? "ready" : ""}">${(c.trade_ready ?? c.tradeReady) ? "TRADE_READY" : "filtered"}</span></td>
-    </tr>`).join("") : '<tr class="empty-row"><td colspan="5">Scanner runs every 30s…</td></tr>';
+      <td>
+        <span class="status-chip ${ready ? "ready" : ""}">${esc(stage)}</span>
+        ${reason ? `<span class="sub" title="${esc(reason)}">${esc(reason)}</span>` : ""}
+      </td>
+    </tr>`;
+  }).join("") : '<tr class="empty-row"><td colspan="5">Scanner runs every 30s…</td></tr>';
 }
 
 function renderCopy(events) {
-  $("copy-list").innerHTML = (events || []).length ? events.slice(0, 25).map(e => `<li>
+  $("copy-list").innerHTML = (events || []).length ? events.slice(0, 25).map(e => {
+    const status = e.executed ? "executed" : (e.block_reason || "watched");
+    const sourceLink = e.trader_signature
+      ? `<a class="sub" href="${solscan(e.trader_signature)}" target="_blank" rel="noopener noreferrer" title="Original KOL transaction">source tx</a>`
+      : "";
+    const botLink = e.our_signature
+      ? `<a class="sub" href="${solscan(e.our_signature)}" target="_blank" rel="noopener noreferrer" title="Emerald Gate transaction">bot tx</a>`
+      : "";
+
+    return `<li>
       <time>${time(e.ts)}</time>
-      <span class="copy-side ${e.side}">${e.side}</span>
+      <span class="copy-side ${esc(e.side)}">${esc(e.side)}</span>
       <span>${esc(short(e.mint))} ← ${esc(short(e.trader_address))}</span>
-      <span class="sub">${e.executed ? "executed" : esc(e.block_reason || "watched")}</span>
-      ${e.our_signature ? `<a href="${solscan(e.our_signature)}" target="_blank" rel="noopener">${short(e.our_signature)}</a>` : ""}
-    </li>`).join("") : '<li class="empty-row">KOL trades appear here in real time.</li>';
+      <span class="sub" title="${esc(status)}">${esc(status)}</span>
+      ${sourceLink}
+      ${botLink}
+    </li>`;
+  }).join("") : '<li class="empty-row">KOL trades appear here in real time.</li>';
 }
 
 function renderPositions(positions) {
