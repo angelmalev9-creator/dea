@@ -105,7 +105,12 @@ function dedupeByMint(rows) {
 }
 
 function renderSignals(s) {
-  $("scan-ts").textContent = s.scan?.ts ? `last scan ${time(s.scan.ts)}` : "—";
+  const marketTs = s.scan?.marketUpdatedAt;
+  $("scan-ts").textContent = marketTs
+    ? `market live ${time(marketTs)} · discovery ${time(s.scan.ts)}`
+    : s.scan?.ts
+      ? `last discovery ${time(s.scan.ts)}`
+      : "—";
   const raw = s.scan?.candidates?.length ? s.scan.candidates : s.signals;
   const rows = dedupeByMint(raw).slice(0, 20);
 
@@ -116,8 +121,14 @@ function renderSignals(s) {
 
     return `<tr>
       <td class="sym">${esc(c.symbol || "?")}<span class="sub">${esc(short(c.mint))}</span></td>
-      <td class="num-col">$${fmtPrice(c.price_usd ?? c.priceUsd)}</td>
-      <td class="num-col">$${fmt(c.liquidity_usd ?? c.liquidityUsd, 0)}</td>
+      <td class="num-col">
+        $${fmtPrice(c.price_usd ?? c.priceUsd)}
+        <span class="sub">${c.market_updated_at ? `live ${time(c.market_updated_at)}` : "waiting…"}</span>
+      </td>
+      <td class="num-col">
+        $${fmt(c.liquidity_usd ?? c.liquidityUsd, 0)}
+        <span class="sub">${c.market_stale ? "stale · keeping last real value" : `${fmt(c.price_change_5m, 1)}% · 5m`}</span>
+      </td>
       <td>${gate(c.checks, c.security)}</td>
       <td>
         <span class="status-chip ${ready ? "ready" : ""}">${esc(stage)}</span>
