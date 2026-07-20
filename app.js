@@ -1040,6 +1040,17 @@ function renderPortfolio() {
     ? "—"
     : `${fmt(state.stats.winRate, 0)}%`;
 
+  const auto = marketState.autoTrader || state.market?.autoTrader || {};
+  const autoStatus = $("paper-auto-status");
+
+  if (autoStatus) {
+    autoStatus.textContent = auto.lastOpenedAt
+      ? `${auto.lastOpenedSymbol || short(auto.lastOpenedMint)} · ${time(auto.lastOpenedAt)}`
+      : auto.lastDecision || "warming up";
+
+    autoStatus.title = JSON.stringify(auto.rejections || {});
+  }
+
   const positions = state.positions || [];
   const open = positions.filter(position => position.status === "alert" || position.status === "open");
   const closed = positions.filter(position => position.status === "closed");
@@ -1073,6 +1084,7 @@ const SETTINGS_FIELDS = [
   ["paperAutoTradeEnabled", "Auto PAPER scanner", "boolean"],
   ["paperAutoEntriesPerTick", "Auto entries per scan", "number"],
   ["paperReentryCooldownMin", "Re-entry cooldown min", "number"],
+  ["paperStrategyProfile", "Paper strategy profile", "profile"],
   ["sniperEnabled", "Scanner strategy", "boolean"],
   ["copytradeEnabled", "Copytrade", "boolean"],
   ["buySizeSol", "Sniper size SOL", "number"],
@@ -1130,6 +1142,13 @@ function renderSettings() {
       </select></label>`;
     }
 
+    if (type === "profile") {
+      return `<label><span>${label}</span><select data-setting="${path}" data-type="profile">
+        <option value="active" ${value !== "strict" ? "selected" : ""}>ACTIVE · builds a demo sample</option>
+        <option value="strict" ${value === "strict" ? "selected" : ""}>STRICT · every rule must pass</option>
+      </select></label>`;
+    }
+
     return `<label><span>${label}</span><input data-setting="${path}" data-type="number" type="number" step="any" value="${esc(value)}" /></label>`;
   }).join("");
 }
@@ -1143,7 +1162,7 @@ async function saveSettings() {
     const type = element.dataset.type;
     const value = type === "boolean"
       ? element.value === "true"
-      : type === "mode"
+      : type === "mode" || type === "profile"
         ? element.value
         : Number(element.value);
 
