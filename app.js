@@ -57,16 +57,45 @@ async function poll() {
 function render(s) {
   $("plan-chip").textContent = s.plan.toUpperCase();
   $("plan-chip").className = `plan-chip ${s.plan}`;
+  const paperMode = s.mode === "paper";
   const mb = $("mode-badge");
-  mb.textContent = s.liveTrading ? "LIVE TRADING" : "SIGNAL MODE";
-  mb.className = `badge ${s.liveTrading ? "live" : "signal"}`;
+  mb.textContent = paperMode
+    ? "PAPER TRADING"
+    : s.liveTrading
+      ? "LIVE TRADING"
+      : "LIVE BLOCKED";
+  mb.className = `badge ${paperMode ? "signal" : s.liveTrading ? "live" : "signal"}`;
   $("rpc-dots").innerHTML = s.rpc.map(r => `<span class="rpc-dot ${r.healthy ? "up" : ""}" title="${esc(r.url)}"></span>`).join("");
 
-  $("wallet-address").textContent = s.wallet.publicKey;
-  $("wallet-sync").textContent = `synced ${time(s.ts)}`;
-  $("wallet-balance").textContent = s.wallet.balanceSol === null ? "—" : fmt(s.wallet.balanceSol, 4);
-  $("awaiting-funds").classList.toggle("hidden", s.wallet.funded || s.wallet.balanceSol === null);
-  $("token-holdings").innerHTML = s.wallet.tokens.slice(0, 6).map(t => `<li><b>${fmt(t.amount, 2)}</b> · ${esc(short(t.mint))}</li>`).join("");
+  const walletTitle = document.querySelector(".row-wallet article:first-child h2");
+  const balanceUnit = document.querySelector(".balance-unit");
+  const performanceFoot = document.querySelector(".row-wallet article:nth-child(2) .stat-foot");
+  const brandSub = document.querySelector("#app .brand-sub");
+
+  if (paperMode) {
+    walletTitle.textContent = "Paper wallet";
+    balanceUnit.textContent = "DEMO SOL";
+    brandSub.textContent = "Real market data · simulated funds";
+    $("wallet-address").textContent = "No real transaction is signed or broadcast";
+    $("wallet-sync").textContent = `market synced ${time(s.ts)}`;
+    $("wallet-balance").textContent = fmt(s.paper.equitySol, 4);
+    $("awaiting-funds").classList.add("hidden");
+    $("token-holdings").innerHTML = `
+      <li><b>${fmt(s.paper.cashSol, 4)}</b> cash SOL</li>
+      <li><b>${fmt(s.paper.investedSol, 4)}</b> invested SOL</li>
+      <li><b>${s.paper.unrealizedPnlSol >= 0 ? "+" : ""}${fmt(s.paper.unrealizedPnlSol, 4)}</b> unrealized PnL</li>`;
+    performanceFoot.textContent = "Paper trades use real DEXScreener prices and live Jupiter entry/exit quotes. No blockchain transaction is sent.";
+  } else {
+    walletTitle.textContent = "Your sniper wallet";
+    balanceUnit.textContent = "SOL";
+    brandSub.textContent = "Sniper & copytrading · live on-chain only";
+    $("wallet-address").textContent = s.wallet.publicKey;
+    $("wallet-sync").textContent = `synced ${time(s.ts)}`;
+    $("wallet-balance").textContent = s.wallet.balanceSol === null ? "—" : fmt(s.wallet.balanceSol, 4);
+    $("awaiting-funds").classList.toggle("hidden", s.wallet.funded || s.wallet.balanceSol === null);
+    $("token-holdings").innerHTML = s.wallet.tokens.slice(0, 6).map(t => `<li><b>${fmt(t.amount, 2)}</b> · ${esc(short(t.mint))}</li>`).join("");
+    performanceFoot.textContent = "Only settled on-chain trades. No paper balance is mixed into live results.";
+  }
 
   const pnl = s.stats.realizedPnlSol;
   $("stat-pnl").innerHTML = `<span class="${pnl >= 0 ? "pos" : "neg"}">${pnl >= 0 ? "+" : ""}${fmt(pnl, 4)} SOL</span>`;
@@ -76,7 +105,7 @@ function render(s) {
 
   renderSignals(s);
   renderCopy(s.copyEvents);
-  renderPositions(s.positions);
+  renderPositions(s.positions, s.mode);
   if (!settingsDirty) renderSettings(s.settings, s.defaults);
 }
 
@@ -140,7 +169,7 @@ function renderSignals(s) {
 
 function renderCopy(events) {
   $("copy-list").innerHTML = (events || []).length ? events.slice(0, 25).map(e => {
-    const status = e.executed ? "executed" : (e.block_reason || "watched");
+    const status = e.block_reason || (e.executed ? "executed" : "watched");
     const sourceLink = e.trader_signature
       ? `<a class="sub" href="${solscan(e.trader_signature)}" target="_blank" rel="noopener noreferrer" title="Original KOL transaction">source tx</a>`
       : "";
@@ -159,11 +188,11 @@ function renderCopy(events) {
   }).join("") : '<li class="empty-row">KOL trades appear here in real time.</li>';
 }
 
-function renderPositions(positions) {
+function renderPositions(positions, mode) {
   const open = positions.filter(p => p.status === "open" || p.status === "alert");
   const closed = positions.filter(p => p.status === "closed");
   $("open-rows").innerHTML = open.length ? open.map(p => `<tr>
-      <td class="sym">${esc(p.symbol)}${p.status === "alert" ? ' <span class="sub">signal</span>' : ""}<span class="sub">${esc(short(p.mint))}</span></td>
+      <td class="sym">${esc(p.symbol)}${p.status === "alert" ? ' <span class="sub">PAPER</span>' : ""}<span class="sub">${esc(short(p.mint))}</span></td>
       <td class="sub">${p.source === "copytrade" ? "copy ← " + esc(short(p.copied_from)) : "sniper"}</td>
       <td class="num-col ${Number(p.last_change_pct) >= 0 ? "pos" : "neg"}">${p.last_change_pct === null ? "—" : (Number(p.last_change_pct) >= 0 ? "+" : "") + fmt(p.last_change_pct, 1) + "%"}</td>
       <td class="sub">peak $${fmtPrice(p.peak_price_usd)}</td>
@@ -172,7 +201,7 @@ function renderPositions(positions) {
       <td class="sym">${esc(p.symbol)}</td>
       <td class="num-col ${Number(p.pnl_pct) >= 0 ? "pos" : "neg"}">${p.pnl_pct === null ? "—" : (Number(p.pnl_pct) >= 0 ? "+" : "") + fmt(p.pnl_pct, 1) + "%"}</td>
       <td class="sub">${esc(p.exit_reason || "—")}</td>
-      <td>${p.sell_signature ? `<a class="sub" href="${solscan(p.sell_signature)}" target="_blank" rel="noopener">${short(p.sell_signature)}</a>` : '<span class="sub">—</span>'}</td>
+      <td>${p.sell_signature ? `<a class="sub" href="${solscan(p.sell_signature)}" target="_blank" rel="noopener">${short(p.sell_signature)}</a>` : '<span class="sub">PAPER</span>'}</td>
     </tr>`).join("") : '<tr class="empty-row"><td colspan="4">No closed trades yet.</td></tr>';
 }
 
@@ -222,6 +251,8 @@ $("btn-scam").onclick = async () => {
 // ── Settings (defaults + custom) ───────────────────────────────────────────
 let settingsDirty = false;
 const FIELDS = [
+  ["tradingMode", "Execution mode", "mode"],
+  ["paperStartingSol", "Paper starting balance (SOL)"],
   ["sniperEnabled", "Sniper on", "bool"], ["copytradeEnabled", "Copytrading on", "bool"],
   ["buySizeSol", "Sniper size (SOL)"], ["copySizeSol", "Copy size (SOL)"],
   ["maxOpenPositions", "Max positions"], ["slippageBps", "Slippage (bps)"],
@@ -238,8 +269,12 @@ function renderSettings(settings, defaults) {
   $("settings-grid").innerHTML = FIELDS.map(([path, label, type]) => {
     const val = getPath(settings, path), def = getPath(defaults, path);
     const custom = JSON.stringify(val) !== JSON.stringify(def);
-    if (type === "bool") return `<label>${label}<select data-path="${path}" class="${custom ? "custom" : ""}">
+    if (type === "bool") return `<label>${label}<select data-path="${path}" data-type="bool" class="${custom ? "custom" : ""}">
         <option value="true" ${val ? "selected" : ""}>on</option><option value="false" ${!val ? "selected" : ""}>off</option></select></label>`;
+    if (type === "mode") return `<label>${label}<select data-path="${path}" data-type="mode" class="${custom ? "custom" : ""}">
+        <option value="paper" ${val !== "live" ? "selected" : ""}>PAPER — demo funds, real market</option>
+        <option value="live" ${val === "live" ? "selected" : ""}>LIVE — real wallet and funds</option>
+      </select></label>`;
     return `<label>${label} ${custom ? "· custom" : "· default"}<input data-path="${path}" type="number" step="any" value="${val}" class="${custom ? "custom" : ""}" /></label>`;
   }).join("");
   $("settings-grid").querySelectorAll("input,select").forEach(el => el.onchange = () => settingsDirty = true);
@@ -247,7 +282,12 @@ function renderSettings(settings, defaults) {
 $("btn-save-settings").onclick = async () => {
   const overrides = {};
   $("settings-grid").querySelectorAll("[data-path]").forEach(el => {
-    const v = el.tagName === "SELECT" ? el.value === "true" : Number(el.value);
+    const type = el.dataset.type;
+    const v = type === "bool"
+      ? el.value === "true"
+      : type === "mode"
+        ? el.value
+        : Number(el.value);
     if (JSON.stringify(v) !== JSON.stringify(getPath(state.defaults, el.dataset.path))) setPath(overrides, el.dataset.path, v);
   });
   await api("/api/me/settings", { method: "PUT", body: JSON.stringify(overrides) });
