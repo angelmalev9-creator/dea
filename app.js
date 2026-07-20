@@ -558,8 +558,15 @@ function renderMarket() {
   const rows = filteredMarkets();
 
   $("feed-count").textContent = `${rows.length} markets`;
+  const autoTrader = marketState.autoTrader || {};
+  const autoNote = autoTrader.lastOpenedAt
+    ? `AUTO PAPER opened ${autoTrader.lastOpenedSymbol || short(autoTrader.lastOpenedMint)} at ${time(autoTrader.lastOpenedAt)}`
+    : autoTrader.lastRunAt
+      ? `AUTO PAPER: ${autoTrader.lastDecision || "scanning"}`
+      : "AUTO PAPER warming up";
+
   $("feed-source-note").textContent = marketState.refreshTs
-    ? `Live refresh ${time(marketState.refreshTs)} · discovery ${time(marketState.discoveryTs)}`
+    ? `Live ${time(marketState.refreshTs)} · ${autoNote}`
     : "Discovering live Solana pools…";
 
   if (!rows.length) {
@@ -1063,7 +1070,10 @@ function renderPortfolio() {
 const SETTINGS_FIELDS = [
   ["tradingMode", "Execution mode", "mode"],
   ["paperStartingSol", "Paper starting SOL", "number"],
-  ["sniperEnabled", "Sniper", "boolean"],
+  ["paperAutoTradeEnabled", "Auto PAPER scanner", "boolean"],
+  ["paperAutoEntriesPerTick", "Auto entries per scan", "number"],
+  ["paperReentryCooldownMin", "Re-entry cooldown min", "number"],
+  ["sniperEnabled", "Scanner strategy", "boolean"],
   ["copytradeEnabled", "Copytrade", "boolean"],
   ["buySizeSol", "Sniper size SOL", "number"],
   ["copySizeSol", "Copy size SOL", "number"],
