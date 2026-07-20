@@ -3,331 +3,354 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Prevent the browser/Vercel from keeping the old frontend files -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <title>Emerald Gate — Sniper & Copytrading</title>
+  <title>Emerald Gate V3 — Live Market & Paper Copytrade</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet"
   />
 
-  <link rel="stylesheet" href="styles.css?v=paper-20260720-2" />
+  <link rel="stylesheet" href="styles.css?v=eg-v3-20260720" />
 </head>
-
 <body>
 
-<!-- ── Auth ─────────────────────────────────────────────── -->
-<div id="auth-screen" class="auth-wrap">
-  <div class="card auth-card">
-    <div class="brand" style="margin-bottom:16px">
-      <span class="brand-mark"></span>
+<div id="auth-screen" class="auth-screen">
+  <form class="auth-card" onsubmit="return false">
+    <div class="auth-logo">EG</div>
+    <h1>Emerald Gate</h1>
+    <p>Real Solana market data. Paper execution by default.</p>
 
-      <div>
-        <h1>Emerald Gate</h1>
-        <p class="brand-sub">Real market data · paper and live execution</p>
-      </div>
+    <input id="auth-email" type="email" placeholder="Email" autocomplete="email" />
+    <input id="auth-pass" type="password" placeholder="Password" autocomplete="current-password" />
+
+    <div class="auth-actions">
+      <button id="btn-login" class="button primary">Sign in</button>
+      <button id="btn-signup" class="button secondary">Create account</button>
     </div>
 
-    <input
-      id="auth-email"
-      type="email"
-      placeholder="email"
-      autocomplete="email"
-    />
-
-    <input
-      id="auth-pass"
-      type="password"
-      placeholder="password"
-      autocomplete="current-password"
-    />
-
-    <div style="display:flex;gap:10px;margin-top:10px">
-      <button class="btn primary" id="btn-login">Sign in</button>
-      <button class="btn" id="btn-signup">Create free FOMO account</button>
-    </div>
-
-    <p class="auth-msg" id="auth-msg"></p>
-
-    <p class="stat-foot">
-      Paper trading uses real market data without sending blockchain
-      transactions. Live trading with real funds requires a PRO plan.
-    </p>
-  </div>
+    <div id="auth-msg" class="auth-message"></div>
+  </form>
 </div>
 
-<!-- ── App ──────────────────────────────────────────────── -->
-<div id="app" class="hidden">
-
+<div id="app" class="app hidden">
   <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark"></span>
-
+    <div class="brand-block">
+      <div class="brand-icon">EG</div>
       <div>
-        <h1>Emerald Gate</h1>
-        <p class="brand-sub">Real market data · paper and live execution</p>
+        <div class="brand-name">Emerald Gate</div>
+        <div class="brand-sub">Solana market scanner · paper copytrade</div>
       </div>
     </div>
 
-    <div class="topbar-status">
-      <span id="plan-chip" class="plan-chip fomo">FOMO</span>
-      <span id="mode-badge" class="badge">—</span>
+    <nav class="main-nav" aria-label="Main navigation">
+      <button class="nav-tab active" data-view="market-view">Markets</button>
+      <button class="nav-tab" data-view="copy-view">Copytrade</button>
+      <button class="nav-tab" data-view="portfolio-view">Portfolio</button>
+    </nav>
+
+    <div class="top-status">
+      <span id="plan-chip" class="chip">—</span>
+      <span id="mode-chip" class="chip paper">PAPER</span>
+      <span id="market-clock" class="live-clock">market —</span>
       <div id="rpc-dots" class="rpc-dots"></div>
-      <button class="btn small" id="btn-logout">Sign out</button>
+      <button id="btn-logout" class="icon-button" title="Sign out">↗</button>
     </div>
   </header>
 
   <main>
-
-    <!-- Wallet + performance -->
-    <section class="row row-wallet">
-
-      <article class="card">
-        <div class="card-head">
-          <h2>Trading wallet</h2>
-          <span id="wallet-sync" class="sync-tag">syncing…</span>
+    <section id="market-view" class="view active">
+      <div class="market-toolbar">
+        <div class="feed-tabs" id="feed-tabs">
+          <button class="feed-tab active" data-tab="new">New pairs</button>
+          <button class="feed-tab" data-tab="trending">Trending</button>
+          <button class="feed-tab" data-tab="boosted">Boosted</button>
+          <button class="feed-tab" data-tab="all">All markets</button>
+          <button class="feed-tab" data-tab="watchlist">Watchlist</button>
         </div>
 
-        <p class="mono addr" id="wallet-address">—</p>
-
-        <div class="balance-line">
-          <span class="balance-value num" id="wallet-balance">—</span>
-          <span class="balance-unit">SOL</span>
+        <div class="toolbar-actions">
+          <input id="market-search" class="search-input" placeholder="Search name, ticker or mint" />
+          <button id="btn-toggle-filters" class="button compact secondary">Filters</button>
+          <button id="btn-reset-filters" class="button compact ghost">Reset</button>
         </div>
-
-        <div id="awaiting-funds" class="awaiting hidden">
-          <div class="awaiting-pulse"></div>
-
-          <div>
-            <strong>Awaiting funds</strong>
-            <p>
-              Deposit SOL only when LIVE mode is intentionally enabled.
-              PAPER mode never uses real funds.
-            </p>
-          </div>
-        </div>
-
-        <ul id="token-holdings" class="token-holdings"></ul>
-      </article>
-
-      <article class="card">
-        <div class="card-head">
-          <h2>Realized performance</h2>
-        </div>
-
-        <div class="stat-grid">
-          <div class="stat">
-            <span class="stat-label">Realized PnL</span>
-            <span class="stat-value num" id="stat-pnl">—</span>
-          </div>
-
-          <div class="stat">
-            <span class="stat-label">Win rate</span>
-            <span class="stat-value num" id="stat-winrate">—</span>
-          </div>
-
-          <div class="stat">
-            <span class="stat-label">Open positions</span>
-            <span class="stat-value num" id="stat-open">—</span>
-          </div>
-
-          <div class="stat">
-            <span class="stat-label">Closed trades</span>
-            <span class="stat-value num" id="stat-closed">—</span>
-          </div>
-        </div>
-
-        <p class="stat-foot">Loading the selected execution mode…</p>
-      </article>
-
-    </section>
-
-    <!-- Sniper -->
-    <section class="card">
-      <div class="card-head">
-        <h2>Sniper signals — intelligent gate</h2>
-        <span class="sync-tag" id="scan-ts">—</span>
       </div>
 
-      <div class="toolbar">
-        <input
-          id="scam-input"
-          placeholder="paste any token mint → scam or real?"
-        />
+      <section id="filter-panel" class="filter-panel">
+        <label>
+          <span>Age max (min)</span>
+          <input id="filter-age-max" type="number" value="60" min="0" step="1" />
+        </label>
+        <label>
+          <span>Liquidity min $</span>
+          <input id="filter-liq-min" type="number" value="0" min="0" step="100" />
+        </label>
+        <label>
+          <span>Liquidity max $</span>
+          <input id="filter-liq-max" type="number" placeholder="Any" min="0" step="100" />
+        </label>
+        <label>
+          <span>Market cap min $</span>
+          <input id="filter-mcap-min" type="number" value="0" min="0" step="1000" />
+        </label>
+        <label>
+          <span>Market cap max $</span>
+          <input id="filter-mcap-max" type="number" placeholder="Any" min="0" step="1000" />
+        </label>
+        <label>
+          <span>5m volume min $</span>
+          <input id="filter-volume-min" type="number" value="0" min="0" step="100" />
+        </label>
+        <label>
+          <span>5m txns min</span>
+          <input id="filter-txns-min" type="number" value="0" min="0" step="1" />
+        </label>
+        <label>
+          <span>Buy / sell min</span>
+          <input id="filter-ratio-min" type="number" value="0" min="0" step="0.1" />
+        </label>
+        <label>
+          <span>5m change min %</span>
+          <input id="filter-change-min" type="number" placeholder="Any" step="1" />
+        </label>
+        <label>
+          <span>Top 10 max %</span>
+          <input id="filter-top10-max" type="number" placeholder="Checked only" min="0" max="100" step="1" />
+        </label>
+        <label>
+          <span>DEX</span>
+          <select id="filter-dex">
+            <option value="">All</option>
+          </select>
+        </label>
+        <label>
+          <span>Sort</span>
+          <select id="filter-sort">
+            <option value="trend">Trending score</option>
+            <option value="age">Newest pair</option>
+            <option value="volume">5m volume</option>
+            <option value="liquidity">Liquidity</option>
+            <option value="mcap">Market cap</option>
+            <option value="change">5m change</option>
+            <option value="txns">5m transactions</option>
+          </select>
+        </label>
 
-        <button class="btn small" id="btn-scam">
-          Check token
-        </button>
+        <label class="switch-label">
+          <input id="filter-dex-paid" type="checkbox" />
+          <span>DEX paid / boosted</span>
+        </label>
+        <label class="switch-label">
+          <input id="filter-socials" type="checkbox" />
+          <span>Has socials</span>
+        </label>
+        <label class="switch-label">
+          <input id="filter-security" type="checkbox" />
+          <span>Passed security</span>
+        </label>
+      </section>
 
-        <span id="scam-result" class="sub"></span>
+      <div class="feed-summary">
+        <div>
+          <strong id="feed-count">0 markets</strong>
+          <span id="feed-source-note">Discovering live Solana pools…</span>
+        </div>
+        <div class="legend">
+          <span><i class="dot live"></i> live</span>
+          <span><i class="dot stale"></i> stale</span>
+          <span><i class="dot checked"></i> security checked</span>
+        </div>
       </div>
 
-      <div class="table-wrap">
-        <table>
+      <div class="market-table-wrap">
+        <table class="market-table">
           <thead>
             <tr>
-              <th>Token</th>
-              <th class="num-col">Price</th>
-              <th class="num-col">Liquidity</th>
-              <th>Gate</th>
-              <th>Status</th>
+              <th class="star-col"></th>
+              <th>Pair</th>
+              <th>Age</th>
+              <th class="right">Price</th>
+              <th class="right">5m</th>
+              <th class="right">1h</th>
+              <th class="right">6h</th>
+              <th class="right">24h</th>
+              <th class="right">5m Txns</th>
+              <th class="right">5m Volume</th>
+              <th class="right">Liquidity</th>
+              <th class="right">Market Cap</th>
+              <th>DEX</th>
+              <th>Risk</th>
+              <th></th>
             </tr>
           </thead>
-
-          <tbody id="signal-rows">
-            <tr class="empty-row">
-              <td colspan="5">
-                Scanner runs every 30s over fresh DEXScreener launches…
-              </td>
-            </tr>
+          <tbody id="market-rows">
+            <tr><td colspan="15" class="empty-cell">Loading live feed…</td></tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- Copytrade + KOLs -->
-    <section class="row">
+    <section id="copy-view" class="view">
+      <div class="section-grid copy-grid">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>FOMO leaders</h2>
+              <p>Current public Kolscan leaderboard. PAPER copying follows the selected top N.</p>
+            </div>
+            <div class="leader-controls">
+              <label>
+                Auto-copy top
+                <input id="copy-top-n" type="number" min="0" max="25" value="5" />
+              </label>
+              <button id="btn-save-copy-top" class="button compact primary">Save</button>
+            </div>
+          </div>
+          <div id="leaderboard" class="leaderboard"></div>
+        </article>
 
-      <article class="card">
-        <div class="card-head">
-          <h2>Copytrade feed</h2>
-        </div>
-
-        <ul id="copy-list" class="feed">
-          <li class="empty-row">
-            KOL trades appear here in real time.
-          </li>
-        </ul>
-      </article>
-
-      <article class="card">
-        <div class="card-head">
-          <h2>
-            KOL leaderboard
-            <span class="sub">live from kolscan.io</span>
-          </h2>
-        </div>
-
-        <div class="toolbar">
-          <input
-            id="trader-input"
-            placeholder="or paste any wallet address to follow"
-          />
-
-          <button class="btn small" id="btn-follow">
-            Follow
-          </button>
-        </div>
-
-        <div id="kol-list"></div>
-      </article>
-
-    </section>
-
-    <!-- Positions -->
-    <section class="row">
-
-      <article class="card">
-        <div class="card-head">
-          <h2>Open positions</h2>
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Token</th>
-                <th>Source</th>
-                <th class="num-col">PnL</th>
-                <th>Exit engine</th>
-              </tr>
-            </thead>
-
-            <tbody id="open-rows">
-              <tr class="empty-row">
-                <td colspan="4">No open positions.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </article>
-
-      <article class="card">
-        <div class="card-head">
-          <h2>Closed trades</h2>
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Token</th>
-                <th class="num-col">PnL</th>
-                <th>Exit reason</th>
-                <th>Tx</th>
-              </tr>
-            </thead>
-
-            <tbody id="closed-rows">
-              <tr class="empty-row">
-                <td colspan="4">No closed trades yet.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </article>
-
-    </section>
-
-    <!-- Settings -->
-    <section class="card">
-      <div class="card-head">
-        <h2>Strategy settings</h2>
-
-        <span class="sync-tag">
-          defaults are the recommended profile — change anything,
-          it becomes yours
-        </span>
-      </div>
-
-      <div class="settings-grid" id="settings-grid"></div>
-
-      <div style="display:flex;gap:10px;margin-top:14px">
-        <button class="btn primary" id="btn-save-settings">
-          Save custom settings
-        </button>
-
-        <button class="btn" id="btn-reset-settings">
-          Reset to best defaults
-        </button>
-
-        <span id="settings-msg" class="sub"></span>
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Live copy feed</h2>
+              <p>Original KOL transaction plus the PAPER execution result.</p>
+            </div>
+          </div>
+          <div id="copy-events" class="copy-events"></div>
+        </article>
       </div>
     </section>
 
+    <section id="portfolio-view" class="view">
+      <div class="portfolio-summary">
+        <article class="metric-card primary-metric">
+          <span>Paper equity</span>
+          <strong id="paper-equity">—</strong>
+          <small id="paper-starting">Starting —</small>
+        </article>
+        <article class="metric-card">
+          <span>Cash</span>
+          <strong id="paper-cash">—</strong>
+        </article>
+        <article class="metric-card">
+          <span>Invested</span>
+          <strong id="paper-invested">—</strong>
+        </article>
+        <article class="metric-card">
+          <span>Unrealized PnL</span>
+          <strong id="paper-unrealized">—</strong>
+        </article>
+        <article class="metric-card">
+          <span>Realized PnL</span>
+          <strong id="paper-realized">—</strong>
+        </article>
+        <article class="metric-card">
+          <span>Win rate</span>
+          <strong id="paper-winrate">—</strong>
+        </article>
+      </div>
+
+      <div class="section-grid portfolio-grid">
+        <article class="panel">
+          <div class="panel-head"><h2>Open PAPER positions</h2></div>
+          <div class="table-scroll">
+            <table class="portfolio-table">
+              <thead>
+                <tr><th>Token</th><th>Source</th><th class="right">Entry</th><th class="right">PnL</th><th>Exit engine</th><th></th></tr>
+              </thead>
+              <tbody id="open-positions"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head"><h2>Closed PAPER history</h2></div>
+          <div class="table-scroll">
+            <table class="portfolio-table">
+              <thead>
+                <tr><th>Token</th><th>Source</th><th class="right">PnL</th><th>Exit reason</th><th>Closed</th></tr>
+              </thead>
+              <tbody id="closed-positions"></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+
+      <article class="panel settings-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Strategy settings</h2>
+            <p>PAPER remains the safe default. LIVE can use real funds.</p>
+          </div>
+        </div>
+        <div id="settings-grid" class="settings-grid"></div>
+        <div class="settings-actions">
+          <button id="btn-save-settings" class="button primary">Save settings</button>
+          <button id="btn-reset-settings" class="button secondary">Reset defaults</button>
+          <span id="settings-message"></span>
+        </div>
+      </article>
+    </section>
   </main>
-
-  <footer>
-    <p>
-      Prices, liquidity and source signatures come from live external
-      providers. PAPER mode never signs or broadcasts a Solana transaction.
-    </p>
-  </footer>
-
 </div>
 
+<aside id="token-drawer" class="token-drawer hidden" aria-hidden="true">
+  <div class="drawer-backdrop" data-close-drawer></div>
+  <div class="drawer-panel">
+    <header class="drawer-head">
+      <div class="token-title">
+        <img id="drawer-token-image" alt="" />
+        <div>
+          <h2 id="drawer-token-name">Token</h2>
+          <p id="drawer-token-meta">—</p>
+        </div>
+      </div>
+      <button class="icon-button" data-close-drawer>×</button>
+    </header>
+
+    <div class="drawer-price-row">
+      <div>
+        <span>Live price</span>
+        <strong id="drawer-price">—</strong>
+      </div>
+      <div id="drawer-change" class="change-pill">—</div>
+    </div>
+
+    <div class="chart-toolbar">
+      <button class="chart-range active" data-timeframe="minute" data-aggregate="1">1m</button>
+      <button class="chart-range" data-timeframe="minute" data-aggregate="5">5m</button>
+      <button class="chart-range" data-timeframe="minute" data-aggregate="15">15m</button>
+      <button class="chart-range" data-timeframe="hour" data-aggregate="1">1h</button>
+      <span id="chart-source">—</span>
+    </div>
+
+    <div id="token-chart" class="token-chart"></div>
+
+    <div id="drawer-metrics" class="drawer-metrics"></div>
+
+    <section class="drawer-section">
+      <h3>Security gate</h3>
+      <div id="drawer-security" class="security-list">Loading checks…</div>
+    </section>
+
+    <section class="drawer-actions">
+      <input id="paper-buy-size" type="number" min="0.001" step="0.01" value="0.1" />
+      <button id="btn-paper-buy" class="button primary">PAPER buy with live quote</button>
+      <a id="drawer-dex-link" class="button secondary" target="_blank" rel="noopener noreferrer">Open DEXScreener</a>
+    </section>
+
+    <div id="drawer-message" class="drawer-message"></div>
+  </div>
+</aside>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
-<!-- Versioned files force browsers and Vercel to load the new PAPER frontend -->
-<script src="config.js?v=paper-20260720-2"></script>
-<script src="app.js?v=paper-20260720-2"></script>
-
+<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+<script src="config.js?v=eg-v3-20260720"></script>
+<script src="app.js?v=eg-v3-20260720"></script>
 </body>
 </html>
