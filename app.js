@@ -1,10 +1,13 @@
+(() => {
+"use strict";
+
 const {
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
   ENGINE_URL,
 } = window.EG_CONFIG;
 
-const supabase = window.supabase.createClient(
+const supa = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY
 );
@@ -146,7 +149,7 @@ async function api(path, options = {}) {
 
 // ── Authentication ────────────────────────────────────────────────────────
 $("btn-login").onclick = async () => {
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supa.auth.signInWithPassword({
     email: $("auth-email").value,
     password: $("auth-pass").value,
   });
@@ -160,7 +163,7 @@ $("btn-login").onclick = async () => {
 };
 
 $("btn-signup").onclick = async () => {
-  const { error } = await supabase.auth.signUp({
+  const { error } = await supa.auth.signUp({
     email: $("auth-email").value,
     password: $("auth-pass").value,
   });
@@ -171,11 +174,11 @@ $("btn-signup").onclick = async () => {
 };
 
 $("btn-logout").onclick = async () => {
-  await supabase.auth.signOut();
+  await supa.auth.signOut();
   location.reload();
 };
 
-supabase.auth.getSession().then(({ data }) => {
+supa.auth.getSession().then(({ data }) => {
   if (data.session) start(data.session);
 });
 
@@ -354,7 +357,7 @@ function switchView(viewId) {
 // ── Polling ───────────────────────────────────────────────────────────────
 async function refreshAll() {
   try {
-    const { data } = await supabase.auth.getSession();
+    const { data } = await supa.auth.getSession();
     if (data.session) session = data.session;
 
     const [nextState, nextMarket] = await Promise.all([
@@ -1165,3 +1168,5 @@ async function resetSettings() {
     $("settings-message").textContent = error.message;
   }
 }
+
+})();
